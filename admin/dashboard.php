@@ -64,8 +64,25 @@ if (isset($_GET['delete'])) {
     exit();
 }
 
+// Handle Consultation Deletion
+if (isset($_GET['delete_consultation'])) {
+    $c_id = $_GET['delete_consultation'];
+    $stmt = $pdo->prepare("DELETE FROM consultations WHERE id = ?");
+    $stmt->execute([$c_id]);
+    header("Location: dashboard.php");
+    exit();
+}
+
 // Fetch all projects
 $projects = $pdo->query("SELECT * FROM projects ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
+
+// Fetch all consultation messages safely
+$consultations = [];
+try {
+    $consultations = $pdo->query("SELECT * FROM consultations ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    // Table might not be created yet if no form submissions occurred
+}
 
 $page_title = "Admin Dashboard | Chidex Construction Company";
 include '../includes/header.php';
@@ -75,7 +92,7 @@ include '../includes/header.php';
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
         <div>
             <h1 style="color: var(--primary); font-size: 2rem;">Engineer Dashboard</h1>
-            <p style="color: #64748b;">Welcome back, <?php echo htmlspecialchars($_SESSION['admin_user']); ?>. Manage your portfolio items below.</p>
+            <p style="color: #64748b;">Welcome back, <?php echo htmlspecialchars($_SESSION['admin_user'] ?? 'Engineer'); ?>. Manage your portfolio items and client consultations below.</p>
         </div>
         <div style="display: flex; gap: 0.75rem;">
             <a href="../index.php" class="btn" style="background: #0284c7; color: white; text-decoration: none; font-size: 0.9rem;">View Public Site</a>
@@ -89,6 +106,40 @@ include '../includes/header.php';
     <?php if($error): ?>
         <div style="background: #fee2e2; color: #991b1b; padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem; font-weight: bold;"><?php echo $error; ?></div>
     <?php endif; ?>
+
+    <!-- Client Consultations & Inquiries Section -->
+    <h3 style="color: var(--primary); margin-bottom: 1.5rem;">Client Consultation Inquiries</h3>
+    <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 3rem;">
+        <?php if(empty($consultations)): ?>
+            <div class="card" style="padding: 1.5rem;">
+                <p style="color: #64748b; margin: 0;">No consultation messages received yet.</p>
+            </div>
+        <?php else: ?>
+            <?php foreach($consultations as $c): ?>
+                <div class="card" style="padding: 1.5rem; border-left: 4px solid var(--accent, #f59e0b);">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.75rem;">
+                        <div>
+                            <span style="font-size: 0.8rem; font-weight: bold; color: var(--accent); text-transform: uppercase;"><?php echo htmlspecialchars($c['service'] ?? 'General Inquiry'); ?></span>
+                            <h4 style="color: var(--primary); font-size: 1.2rem; margin: 0.25rem 0;"><?php echo htmlspecialchars($c['full_name']); ?></h4>
+                            <p style="font-size: 0.85rem; color: #64748b; margin: 0;">
+                                <strong>Email:</strong> <a href="mailto:<?php echo htmlspecialchars($c['email']); ?>" style="color: #0284c7;"><?php echo htmlspecialchars($c['email']); ?></a> | 
+                                <strong>Phone:</strong> <a href="tel:<?php echo htmlspecialchars($c['phone']); ?>" style="color: #0284c7;"><?php echo htmlspecialchars($c['phone']); ?></a>
+                            </p>
+                        </div>
+                        <div>
+                            <a href="dashboard.php?delete_consultation=<?php echo $c['id']; ?>" onclick="return confirm('Are you sure you want to delete this message?');" style="background: #fee2e2; color: #991b1b; padding: 0.4rem 0.8rem; border-radius: 4px; text-decoration: none; font-size: 0.8rem; font-weight: bold;">Delete</a>
+                        </div>
+                    </div>
+                    <div style="background: #f8fafc; padding: 1rem; border-radius: 6px; border: 1px solid #e2e8f0; margin-top: 0.5rem;">
+                        <p style="font-size: 0.950rem; color: #334155; margin: 0; white-space: pre-line;"><?php echo htmlspecialchars($c['message']); ?></p>
+                    </div>
+                    <?php if(!empty($c['created_at'])): ?>
+                        <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.5rem; text-align: right;">Received: <?php echo htmlspecialchars($c['created_at']); ?></div>
+                    <?php endif; ?>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
 
     <!-- Add Project Form Card -->
     <div class="card" style="margin-bottom: 3rem; padding: 2rem;">
@@ -127,7 +178,7 @@ include '../includes/header.php';
             <p style="color: #64748b;">No projects added yet. Use the form above to publish your first project.</p>
         <?php else: ?>
             <?php foreach($projects as $p): ?>
-                <div class="card" style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem;">
+                <div class="card" style="display: flex; justify-content: space-between; align-items: center; padding: 1.5rem; flex-wrap: wrap; gap: 1rem;">
                     <div>
                         <span style="font-size: 0.8rem; font-weight: bold; color: var(--accent); text-transform: uppercase;"><?php echo htmlspecialchars($p['category']); ?> (<?php echo htmlspecialchars($p['year']); ?>)</span>
                         <h4 style="color: var(--primary); font-size: 1.2rem; margin: 0.25rem 0;"><?php echo htmlspecialchars($p['title']); ?></h4>
