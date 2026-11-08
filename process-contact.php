@@ -1,5 +1,5 @@
 <?php
-require_once 'includes/db.php';
+require_once __DIR__ . '/includes/db.php';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Sanitize user inputs
@@ -31,7 +31,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt = $pdo->prepare("INSERT INTO consultations (full_name, email, phone, service, message) VALUES (?, ?, ?, ?, ?)");
         $stmt->execute([$name, $email, $phone, $service, $message]);
 
-        // Optional: Keep email logic if mail server is enabled
+        // Optional mail dispatch
         $to = "chidexconstruction@gmail.com"; 
         $subject = "New Project Inquiry: " . $service . " from " . $name;
         $email_content = "Name: $name\n";
